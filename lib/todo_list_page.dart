@@ -16,11 +16,31 @@ class _TodoListPageState extends State<TodoListPage> {
   List<Todo> todos = [];
   Todo? deletedTodo;
   int? deletedTodoPosition;
+  String? errorText;
+
+  @override
+  void initState() {
+    super.initState();
+
+    todoRepository.getToDoList().then((value) {
+      setState(() {
+        todos = value;
+      });
+    });
+  }
 
   void addTask() {
+    if (newTodo.text.isEmpty) {
+      setState(() {
+        errorText = 'Você deve inserir um título na sua tarefa';
+      });
+      return;
+    }
+
     setState(() {
       Todo newTask = Todo(title: newTodo.text, dateTime: DateTime.now());
       todos.add(newTask);
+      errorText = null;
     });
     newTodo.clear();
     todoRepository.saveToDolist(todos);
@@ -44,6 +64,8 @@ class _TodoListPageState extends State<TodoListPage> {
               setState(() {
                 todos.clear();
               });
+              todoRepository.saveToDolist(todos);
+
               Navigator.of(context).pop();
             },
             child: Text('Limpar tudo'),
@@ -61,6 +83,7 @@ class _TodoListPageState extends State<TodoListPage> {
 
     setState(() {
       todos.remove(todoItem);
+      todoRepository.saveToDolist(todos);
     });
 
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -74,6 +97,7 @@ class _TodoListPageState extends State<TodoListPage> {
             setState(() {
               todos.insert(deletedTodoPosition!, deletedTodo!);
             });
+            todoRepository.saveToDolist(todos);
           },
         ),
         content: Text(
@@ -100,9 +124,19 @@ class _TodoListPageState extends State<TodoListPage> {
                     child: TextField(
                       controller: newTodo,
                       decoration: InputDecoration(
-                          border: OutlineInputBorder(),
+                          labelStyle: TextStyle(color: Colors.purple),
+                          border: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.purple)),
                           labelText: 'Adicione uma tarefa',
-                          hintText: 'Exemplo: Estudar'),
+                          hintText: 'Exemplo: Estudar',
+                          errorText: errorText,
+                          enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.purple)),
+                          disabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: Colors.purple)),
+                          focusedBorder: OutlineInputBorder(
+                              borderSide:
+                                  BorderSide(color: Colors.purple, width: 3))),
                     ),
                   ),
                   SizedBox(
@@ -135,7 +169,9 @@ class _TodoListPageState extends State<TodoListPage> {
                 children: [
                   Expanded(
                       child: Text(
-                          'Voce possui ${todos.length} tarefas pendentes')), //O Expanded serve pra o conteúdo ocupar o maior espaço possivel
+                    'Você possui ${todos.length} tarefas pendentes',
+                    style: TextStyle(color: Colors.purple),
+                  )), //O Expanded serve pra o conteúdo ocupar o maior espaço possivel
                   ElevatedButton(
                     onPressed: showDeleteConfirmationDialog,
                     child: Text('Limpar tudo'),
